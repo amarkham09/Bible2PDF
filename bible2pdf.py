@@ -21,7 +21,7 @@ def createDocument(text, margins, font, page, file_name):
     # registering a external font in python
     pdfmetrics.registerFont(TTFont('Alegreya Sans', 'AlegreyaSans-Regular.ttf'))
 
-    style = ParagraphStyle(name='BodyText', fontName='Alegreya Sans', fontSize=font['size'],
+    style = ParagraphStyle(name='BodyText', alignment=4, fontName='Alegreya Sans', fontSize=font['size'],
                            leading=font['size'] * font['line_spacing'])
     indent_style = ParagraphStyle(name='IndentedBodyText', parent=style, leftIndent=15)
 
@@ -69,14 +69,14 @@ def fileName(book, start_ref, end_ref):
 if __name__ == '__main__':
     book = 'John'
     start_ref = [1, 1]
-    end_ref = [1, 2]
+    end_ref = [4, 2]
 
     bible_text = getText(book, *start_ref, *end_ref)
     margins = {'left_margin': 20,
                'right_margin': 20,
                'top_margin': 10,
                'bottom_margin': 10,
-               'num_columns': 2,
+               'num_columns': 1,
                'col_inner_padding': 50}
     font = {'size': 11, 'line_spacing': 1.5}
     page = {'portrait_orientation': True, 'print_on_A3': False}
