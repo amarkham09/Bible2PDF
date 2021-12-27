@@ -1,11 +1,24 @@
+import argparse
+
 from meaningless import WebExtractor
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.platypus import Paragraph, SimpleDocTemplate
 from reportlab.platypus.flowables import BalancedColumns
-from reportlab.platypus.frames import ShowBoundaryValue
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.pagesizes import A4, A3
+
+# Defaults
+LEFT_MARGIN = 20
+RIGHT_MARGIN = 20
+TOP_MARGIN = 10
+BOTTOM_MARGIN = 10
+NUM_COLUMNS = 1
+COL_PADDING = 50
+FONT_SIZE = 11
+LINE_SPACING = 1.5
+PORTRAIT_ORIENTATION = True
+PRINT_ON_A3 = False
 
 
 def getText(book, ch_from, v_from, ch_to, v_to, version='ESVUK', bible=None):
@@ -16,25 +29,29 @@ def getText(book, ch_from, v_from, ch_to, v_to, version='ESVUK', bible=None):
     return bible.get_passage_range(book, ch_from, v_from, ch_to, v_to)
 
 
-def createDocument(text, margins, font, page, file_name):
+def createDocument(text, file_name, left_margin=LEFT_MARGIN, right_margin=RIGHT_MARGIN, top_margin=TOP_MARGIN,
+                   bottom_margin=BOTTOM_MARGIN, num_columns=NUM_COLUMNS,
+                   col_padding=COL_PADDING,
+                   font_size=FONT_SIZE, line_spacing=LINE_SPACING, portrait_orientation=PORTRAIT_ORIENTATION,
+                   print_on_A3=PRINT_ON_A3):
     paragraphs = text.split('\n')
     # registering a external font in python
     pdfmetrics.registerFont(TTFont('Alegreya Sans', 'AlegreyaSans-Regular.ttf'))
 
-    style = ParagraphStyle(name='BodyText', alignment=4, fontName='Alegreya Sans', fontSize=font['size'],
-                           leading=font['size'] * font['line_spacing'])
+    style = ParagraphStyle(name='BodyText', alignment=4, fontName='Alegreya Sans', fontSize=font_size,
+                           leading=font_size * line_spacing)
     indent_style = ParagraphStyle(name='IndentedBodyText', parent=style, leftIndent=15)
 
-    if page['print_on_A3']:
+    if print_on_A3:
         paper_size = A3
     else:
         paper_size = A4
-    if not page['portrait_orientation']:
+    if not portrait_orientation:
         paper_size = paper_size[-1:-3:-1]
 
-    doc = SimpleDocTemplate(file_name, pagesize=paper_size, leftMargin=margins['left_margin'],
-                            rightMargin=margins['right_margin'],
-                            topMargin=margins['top_margin'], bottomMargin=margins['bottom_margin'])
+    doc = SimpleDocTemplate(file_name, pagesize=paper_size, leftMargin=left_margin,
+                            rightMargin=right_margin,
+                            topMargin=top_margin, bottomMargin=bottom_margin)
     flowables = []
 
     for paragraph_text in paragraphs:
@@ -43,8 +60,8 @@ def createDocument(text, margins, font, page, file_name):
         else:
             paragraph = Paragraph(paragraph_text, style)
         flowables.append(paragraph)
-    if (n := margins['num_columns']) > 1:
-        story = [BalancedColumns(flowables, nCols=n, innerPadding=margins['col_inner_padding'])]
+    if num_columns > 1:
+        story = [BalancedColumns(flowables, nCols=num_columns, innerPadding=col_padding)]
     else:
         story = flowables
     doc.build(story)
@@ -67,20 +84,49 @@ def fileName(book, start_ref, end_ref):
 
 
 if __name__ == '__main__':
-    book = 'John'
-    start_ref = [1, 1]
-    end_ref = [4, 2]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('ref', help='Bible reference in format BOOK W:X-Y:Z')
+    parser.add_argument('-lm', '--left_margin', default=LEFT_MARGIN, type=int, help=f'Size of left margin in pixels (default {LEFT_MARGIN}).')
+    parser.add_argument('-rm', '--right_margin', default=RIGHT_MARGIN, type=int, help=f'Size of right margin in pixels (default {RIGHT_MARGIN}).')
+    parser.add_argument('-tm', '--top_margin', default=TOP_MARGIN, type=int, help=f'Size of top margin in pixels (default {TOP_MARGIN}).')
+    parser.add_argument('-bm', '--bottom_margin', default=BOTTOM_MARGIN, type=int, help=f'Size of bottom margin in pixels (default {BOTTOM_MARGIN}).')
+    parser.add_argument('-c', '--num_columns', default=NUM_COLUMNS, type=int, help=f'Number of columns (default {NUM_COLUMNS}).')
+    parser.add_argument('-cp', '--col_padding', default=COL_PADDING, type=int, help=f'Column inner padding if multiple columns (default {COL_PADDING}).')
+    parser.add_argument('-f', '--font_size', default=FONT_SIZE, type=int, help=f'Font size in pt (default {FONT_SIZE}).')
+    parser.add_argument('-s', '--line_spacing', default=LINE_SPACING, type=int, help=f'Line spacing multiplier compared with font size (default {LINE_SPACING}).')
 
-    bible_text = getText(book, *start_ref, *end_ref)
-    margins = {'left_margin': 20,
-               'right_margin': 20,
-               'top_margin': 10,
-               'bottom_margin': 10,
-               'num_columns': 1,
-               'col_inner_padding': 50}
-    font = {'size': 11, 'line_spacing': 1.5}
-    page = {'portrait_orientation': True, 'print_on_A3': False}
+    orientation = parser.add_mutually_exclusive_group()
+    orientation.add_argument('-p', '--portrait', action='store_true', help=f'Set page orientation to portrait (default {PORTRAIT_ORIENTATION}).')
+    orientation.add_argument('-l', '--landscape', action='store_true', help=f'Set page orientation to landscape (default {not PORTRAIT_ORIENTATION}).')
 
-    createDocument(bible_text, margins, font, page, fileName(book, start_ref, end_ref))
+    paper = parser.add_mutually_exclusive_group()
+    paper.add_argument('-a3', action='store_true', help=f'Set page size to A3 (default {PRINT_ON_A3}).')
+    paper.add_argument('-a4', action='store_true', help=f'Set page size to A4 (default {not PRINT_ON_A3}).')
+    args = parser.parse_args()
 
-# TODO: Make callable from command line, or alternatively with GUI
+    # ref must be in format 'BOOK X:X-X:X'
+
+    # error check each of these, allow multiple forms of input
+    book, verses = args.ref.split(' ')
+    start, end = verses.split('-')
+    start_ref = start.split(':')
+    end_ref = end.split(':')
+    text = getText(book, *start_ref, *end_ref)
+    file_name = fileName(book, start_ref, end_ref)
+    if args.portrait:
+        print_portrait = True
+    elif args.landscape:
+        print_portrait = False
+    else:
+        print_portrait = PORTRAIT_ORIENTATION
+    if args.a3:
+        print_on_a3 = True
+    elif args.a4:
+        print_on_a3 = False
+    else:
+        print_on_a3 = PRINT_ON_A3
+
+    createDocument(text=text, file_name=file_name, left_margin=args.left_margin, right_margin=args.right_margin,
+                   top_margin=args.top_margin, bottom_margin=args.bottom_margin, num_columns=args.num_columns,
+                   col_padding=args.col_padding, font_size=args.font_size, line_spacing=args.line_spacing,
+                   portrait_orientation=print_portrait, print_on_A3=print_on_a3)
