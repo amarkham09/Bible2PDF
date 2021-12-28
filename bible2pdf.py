@@ -9,7 +9,6 @@ from reportlab.platypus.flowables import BalancedColumns
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.pagesizes import A4, A3
 
-# TODO: Add AppleScript to git once have removed references to my directories
 
 # Defaults
 LEFT_MARGIN = 20
