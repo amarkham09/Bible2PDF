@@ -9,6 +9,8 @@ from reportlab.platypus.flowables import BalancedColumns
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.pagesizes import A4, A3
 
+# TODO: Add AppleScript to git once have removed references to my directories
+
 # Defaults
 LEFT_MARGIN = 20
 RIGHT_MARGIN = 20
@@ -23,6 +25,7 @@ PRINT_ON_A3 = False
 
 VALID_REF = 'Bible reference in format "Book W:X-Y:Z" or "Book W:X-Z" or "Book W-Y:Z" or "Book W-Y" or "Book W", ' \
             'where Z can optionally be "end". '
+
 
 def getText(book_name, ch_from, v_from, ch_to, v_to, version='ESVUK', bible=None):
     if bible is None or not isinstance(bible, WebExtractor):
