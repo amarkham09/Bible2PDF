@@ -21,12 +21,13 @@ FONT_SIZE = 11
 LINE_SPACING = 1.5
 PORTRAIT_ORIENTATION = True
 PRINT_ON_A3 = False
+TRANSLATION = 'ESVUK'
 
 VALID_REF = 'Bible reference in format "Book W:X-Y:Z" or "Book W:X-Z" or "Book W-Y:Z" or "Book W-Y" or "Book W", ' \
             'where Z can optionally be "end". '
 
 
-def getText(book_name, ch_from, v_from, ch_to, v_to, version='ESVUK', bible=None):
+def getText(book_name, ch_from, v_from, ch_to, v_to, version=TRANSLATION, bible=None):
     if bible is None or not isinstance(bible, WebExtractor):
         bible = WebExtractor(translation=version)
     if v_to.lower() == 'end':
@@ -36,9 +37,9 @@ def getText(book_name, ch_from, v_from, ch_to, v_to, version='ESVUK', bible=None
 
 def createDocument(bible_text, path, left_margin=LEFT_MARGIN, right_margin=RIGHT_MARGIN, top_margin=TOP_MARGIN,
                    bottom_margin=BOTTOM_MARGIN, num_columns=NUM_COLUMNS,
-                   col_padding=COL_PADDING,
-                   font_size=FONT_SIZE, line_spacing=LINE_SPACING, portrait_orientation=PORTRAIT_ORIENTATION,
-                   print_on_A3=PRINT_ON_A3):
+                   col_padding=COL_PADDING, font_size=FONT_SIZE, line_spacing=LINE_SPACING,
+                   portrait_orientation=PORTRAIT_ORIENTATION, print_on_A3=PRINT_ON_A3):
+
     paragraphs = bible_text.split('\n')
     # registering a external font in python
     pdfmetrics.registerFont(TTFont('Alegreya Sans', 'AlegreyaSans-Regular.ttf'))
@@ -98,6 +99,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('ref',
                         help=VALID_REF)
+    parser.add_argument('-t', '--translation', default=TRANSLATION, type=str, help=f'Bible translation to use (default {TRANSLATION}).')
     parser.add_argument('-lm', '--left_margin', default=LEFT_MARGIN, type=int,
                         help=f'Size of left margin in pixels (default {LEFT_MARGIN}).')
     parser.add_argument('-rm', '--right_margin', default=RIGHT_MARGIN, type=int,
@@ -160,7 +162,7 @@ if __name__ == '__main__':
             start_ref, end_ref = [start_ref[0], 1], end_ref
 
     # If execution reaches here, start_ref and end_ref should be lists of length 2
-    text = getText(book, *start_ref, *end_ref)
+    text = getText(book, *start_ref, *end_ref, version=args.translation)
     file_name = fileName(book, *start_ref, *end_ref)
     if args.portrait:
         print_portrait = True
